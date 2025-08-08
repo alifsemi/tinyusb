@@ -18,7 +18,7 @@
 #if CFG_TUSB_OS == OPT_OS_ZEPHYR
 #include <zephyr/cache.h>
 #include <soc_common.h>
-#include <soc_memory_map.h>    
+#include <soc_memory_map.h>
 #else
 #include "RTE_Components.h"
 #include CMSIS_device_header
@@ -49,7 +49,7 @@ char logbuf[48];
 #define CLK_ENA_CLK20M              BIT(22)
 
 // Enable clock for USB (PERIPH_CLK_ENA Register)
-#define PERIPH_CLK_ENA_USB_CKEN     BIT(20) 
+#define PERIPH_CLK_ENA_USB_CKEN     BIT(20)
 
 // USB PHY Power Control (PWR_CTRL Register)
 #define PWR_CTRL_UPHY_ISO           BIT(17) // USB PHY Isolation Enable
@@ -76,7 +76,7 @@ char logbuf[48];
 // Structs and Buffers --------------------------------------------------------
 
 // TODO: Use dynamic buffer allocation to reduce memory usage
-// USB Event buffer 
+// USB Event buffer
 static uint32_t _evnt_buf[EVT_BUF_SIZE] CFG_TUSB_MEM_SECTION TU_ATTR_ALIGNED(4096);
 // Control buffer
 static uint8_t _ctrl_buf[CTRL_BUF_SIZE] CFG_TUSB_MEM_SECTION TU_ATTR_ALIGNED(32);
@@ -207,7 +207,7 @@ bool dcd_init(uint8_t rhport, const tusb_rhport_init_t* rh_init) {
     disable_usb_phy_isolation();
     // Clear usb phy power-on-reset signal
     clear_usb_phy_power_on_reset();
-    
+
     // NOTE: Force stop/disconnect could be used for debug purpose only
     //dcd_disconnect(rhport);
 
@@ -217,10 +217,10 @@ bool dcd_init(uint8_t rhport, const tusb_rhport_init_t* rh_init) {
     // Reset the USB device controller
     udev->dctl_b.csftrst = 1;           // Set CSFTRST to 1
     while(0 != udev->dctl_b.csftrst);   // and wait for a read to return 0x0
-    
+
     // NOTE: Core and UTMI PHY reset could be used for debug purpose only
     //_dcd_busy_wait(50000);
-    //ugbl->gctl_b.coresoftreset = 1;   
+    //ugbl->gctl_b.coresoftreset = 1;
     //ugbl->gusb2phycfg0_b.physoftrst = 1;
     //_dcd_busy_wait(50000);
     //ugbl->gusb2phycfg0_b.physoftrst = 0;
@@ -234,7 +234,7 @@ bool dcd_init(uint8_t rhport, const tusb_rhport_init_t* rh_init) {
 
     // Leave the default values for GTXTHRCFG/GRXTHRCFG, unless thresholding is enabled
 
-    // Read the ID register to find the controller version 
+    // Read the ID register to find the controller version
     // and configure the driver for any version-specific features.
     // Check controller ID
     uint32_t gsnpsid = ugbl->gsnpsid;
@@ -251,7 +251,7 @@ bool dcd_init(uint8_t rhport, const tusb_rhport_init_t* rh_init) {
     }
 
     // Configure USB2 PHY
-    ugbl->gusb2phycfg0_b.usbtrdtim = GUSB2PHYCFG0_USBTRDTIM_16BIT;  // UTMI+ 
+    ugbl->gusb2phycfg0_b.usbtrdtim = GUSB2PHYCFG0_USBTRDTIM_16BIT;  // UTMI+
     ugbl->gusb2phycfg0_b.phyif = 1;                                 // 16bit
     // Leave the default values for TOUTCAL
 
@@ -269,7 +269,7 @@ bool dcd_init(uint8_t rhport, const tusb_rhport_init_t* rh_init) {
     // Clear Event Buffer counter
     ugbl->gevntcount0_b.evntcount = 0;
 
-    // Leave the default values for GCTL 
+    // Leave the default values for GCTL
 
     // Set USB speed
 #if CFG_TUD_MAX_SPEED == OPT_MODE_DEFAULT_SPEED || \
@@ -443,7 +443,7 @@ void dcd_int_enable (uint8_t rhport) {
 // shared between main code and the interrupt handler.
 void dcd_int_disable(uint8_t rhport) {
     (void) rhport;
-  
+
     NVIC_DisableIRQ(USB_IRQ_IRQn);
 }
 
@@ -452,8 +452,10 @@ void dcd_int_disable(uint8_t rhport) {
 // leave this empty and also no queue an event for the corresponding SETUP packet.
 void dcd_set_address(uint8_t rhport, uint8_t dev_addr) {
     LOG("%010u >%s", DWT->CYCCNT, __func__);
-    // Set device address
-    udev->dcfg_b.devaddr = dev_addr;
+    // Device address is set from the ISR when SETUP packet is received
+    // By point TinyUSB calls this function, the address has already been
+    // set and STATUS sent back to the host. Xfer call below is purely for
+    // internal TinyUSB state to conclude transaction and issue next SETUP req.
     dcd_edpt_xfer(rhport, tu_edpt_addr(0, TUSB_DIR_IN), NULL, 0);
 
     // NOTE: After receiving the DEPEVT_XFERNOTREADY event,
@@ -480,11 +482,11 @@ void dcd_disconnect(uint8_t rhport) {
     // the Set up a Control-Setup TRB / Start Transfer
 
     // TODO: Issue a DEPENDXFER command for any active transfers
-    
+
     // Disconnect from the host
     udev->dctl_b.run_stop = 0;
     // TODO: Wait until device controller is halted
-    //while(udev->dsts_b.devctrlhlt != 1);    
+    //while(udev->dsts_b.devctrlhlt != 1);
 }
 
 // Enable/Disable Start-of-frame interrupt. Default is disabled
@@ -776,7 +778,7 @@ static void _dcd_handle_depevt(uint8_t rhport, uint8_t ep, uint8_t evt, uint8_t 
 
     LOG("%010u DEPEVT ep%u evt%u sts%u", DWT->CYCCNT, ep, evt, sts);
 
-    depevt_sts_t depevt_sts = {.val = sts}; 
+    depevt_sts_t depevt_sts = {.val = sts};
 
     switch (evt) {
         case DEPEVT_XFERCOMPLETE: {
@@ -848,6 +850,9 @@ static void _dcd_handle_depevt(uint8_t rhport, uint8_t ep, uint8_t evt, uint8_t 
             // XferNotReady NotActive for status stage
             if ((ep == 1) &&
                 depevt_sts.xfernotready.stage == DEPEVT_XFERNOTREADY_STS_CTRLSTS) {
+                if (0x00 == _ctrl_buf[0] && TUSB_REQ_SET_ADDRESS == _ctrl_buf[1]) {
+                    udev->dcfg_b.devaddr = _ctrl_buf[2];
+                }
                 _dcd_start_xfer(1, NULL, 0, TRBCTL_CTL_STAT2);
                 break;
             }
@@ -905,7 +910,7 @@ static void _dcd_handle_devt(uint8_t rhport, uint8_t evt, uint16_t info) {
 
             // Set DevAddr to 0
             udev->dcfg_b.devaddr = 0;
-            
+
             // Set USB speed
             #if CFG_TUD_MAX_SPEED == OPT_MODE_DEFAULT_SPEED || \
                 CFG_TUD_MAX_SPEED == OPT_MODE_HIGH_SPEED
