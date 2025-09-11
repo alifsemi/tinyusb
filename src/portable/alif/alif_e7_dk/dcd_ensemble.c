@@ -45,6 +45,12 @@ char logbuf[48];
 // Defines --------------------------------------------------------
 #if CFG_TUSB_OS == OPT_OS_ZEPHYR
 
+// USB Registers
+#define EXPMST_USB_GPIO0            (EXPMST_BASE + 0xA0)
+#define EXPMST_USB_STAT0            (EXPMST_BASE + 0xA4)
+#define EXPMST_USB_CTRL1            (EXPMST_BASE + 0xA8)
+#define EXPMST_USB_CTRL2            (EXPMST_BASE + 0xAC)
+
 // Enable USB_CLK and 10M_CLK (CLK_ENA Register)
 #define CLK_ENA_CLK20M              BIT(22)
 
@@ -101,7 +107,9 @@ static uint8_t _dcd_cmd_wait(uint8_t ep, uint8_t typ, uint16_t param);
 // Helpers
 
 static inline uint32_t _get_transfered_bytes(uint8_t ep) {
-    return _xfer_bytes[ep] - (_xfer_trb[ep][2] & 0x00FFFFFF);
+    trb_t *trb = (trb_t *)_xfer_trb[ep];
+    TU_ASSERT(_xfer_bytes[ep] >= trb->bufsiz, 0);
+    return _xfer_bytes[ep] - trb->bufsiz;
 }
 
 #if CFG_TUSB_OS == OPT_OS_ZEPHYR
@@ -452,10 +460,8 @@ void dcd_int_disable(uint8_t rhport) {
 // leave this empty and also no queue an event for the corresponding SETUP packet.
 void dcd_set_address(uint8_t rhport, uint8_t dev_addr) {
     LOG("%010u >%s", DWT->CYCCNT, __func__);
-    // Device address is set from the ISR when SETUP packet is received
-    // By point TinyUSB calls this function, the address has already been
-    // set and STATUS sent back to the host. Xfer call below is purely for
-    // internal TinyUSB state to conclude transaction and issue next SETUP req.
+    // Set device address
+    udev->dcfg_b.devaddr = dev_addr;
     dcd_edpt_xfer(rhport, tu_edpt_addr(0, TUSB_DIR_IN), NULL, 0);
 
     // NOTE: After receiving the DEPEVT_XFERNOTREADY event,
@@ -682,7 +688,6 @@ bool dcd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t t
             }
         } break;
         default: { // DATA EPs (BULK & INTERRUPT only)
-            _xfer_bytes[ep] = total_bytes;
             if (tu_edpt_dir(ep_addr) == TUSB_DIR_IN) {
                 _dcd_clean_dcache(buffer, total_bytes);
             } else {
@@ -692,6 +697,7 @@ bool dcd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t t
                     LOG(">%s ep%u total_bytes = %u", __func__, ep, total_bytes);
                 }
             }
+            _xfer_bytes[ep] = total_bytes;
             _dcd_start_xfer(ep, buffer, total_bytes,
                             total_bytes ? TRBCTL_NORMAL : TRBCTL_NORMAL_ZLP);
         }
@@ -829,16 +835,11 @@ static void _dcd_handle_depevt(uint8_t rhport, uint8_t ep, uint8_t evt, uint8_t 
                 LOG("ep%u xfer trb3 = %08x trb2 = %08x", ep, _xfer_trb[ep][3], _xfer_trb[ep][2]);
                 trb_t *trb = (trb_t *)_xfer_trb[ep];
                 if (tu_edpt_dir(tu_edpt_addr(ep >> 1, ep & 1)) == TUSB_DIR_OUT) {
-                    _dcd_invalidate_dcache((void*) trb->bptrl,
-                                           MAX_PACKET_SIZE/*_xfer_bytes[ep]*/ - trb->bufsiz);
-                    dcd_event_xfer_complete(TUD_OPT_RHPORT, tu_edpt_addr(ep >> 1, ep & 1),
-                                        MAX_PACKET_SIZE - trb->bufsiz,
-                                        XFER_RESULT_SUCCESS, true);
-                } else {
-                    dcd_event_xfer_complete(TUD_OPT_RHPORT, tu_edpt_addr(ep >> 1, ep & 1),
-                                        _get_transfered_bytes(ep),
-                                        XFER_RESULT_SUCCESS, true);
+                    _dcd_invalidate_dcache((void*) trb->bptrl, _get_transfered_bytes(ep));
                 }
+                dcd_event_xfer_complete(TUD_OPT_RHPORT, tu_edpt_addr(ep >> 1, ep & 1),
+                                    _get_transfered_bytes(ep),
+                                    XFER_RESULT_SUCCESS, true);
             }
         } break;
         case DEPEVT_XFERINPROGRESS: {
@@ -850,9 +851,6 @@ static void _dcd_handle_depevt(uint8_t rhport, uint8_t ep, uint8_t evt, uint8_t 
             // XferNotReady NotActive for status stage
             if ((ep == 1) &&
                 depevt_sts.xfernotready.stage == DEPEVT_XFERNOTREADY_STS_CTRLSTS) {
-                if (0x00 == _ctrl_buf[0] && TUSB_REQ_SET_ADDRESS == _ctrl_buf[1]) {
-                    udev->dcfg_b.devaddr = _ctrl_buf[2];
-                }
                 _dcd_start_xfer(1, NULL, 0, TRBCTL_CTL_STAT2);
                 break;
             }
