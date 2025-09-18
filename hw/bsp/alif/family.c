@@ -1,12 +1,19 @@
 #include "bsp/board_api.h"
-#include "board.h"
 #include <stdbool.h>
 
 #if CFG_TUSB_OS == OPT_OS_NONE || CFG_TUSB_OS == OPT_OS_FREERTOS
+#include "board_config.h"
 #include "RTE_Components.h"
 #include CMSIS_device_header
-#include "Driver_GPIO.h"
+#include "Driver_IO.h"
 #include "uart_tracelib.h"
+
+extern ARM_DRIVER_GPIO ARM_Driver_GPIO_(BOARD_LEDRGB1_R_GPIO_PORT);
+static ARM_DRIVER_GPIO* led_port = &ARM_Driver_GPIO_(BOARD_LEDRGB1_R_GPIO_PORT);
+
+extern ARM_DRIVER_GPIO ARM_Driver_GPIO_(BOARD_JOY_SW_CENTER_GPIO_PORT);
+static ARM_DRIVER_GPIO* button_port = &ARM_Driver_GPIO_(BOARD_JOY_SW_CENTER_GPIO_PORT);
+
 #endif
 
 #if CFG_TUSB_OS == OPT_OS_ZEPHYR
@@ -25,34 +32,48 @@ static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(DT_ALIAS(sw0), gpios)
  * @brief Board init: configure LED and button pins
  */
 void board_init(void) {
-#if CFG_TUSB_OS == OPT_OS_NONE || CFG_TUSB_OS == OPT_OS_FREERTOS
-      BOARD_Pinmux_Init();
-    BOARD_BUTTON2_Init(NULL);
-
-    // 1ms tick timer
+#if CFG_TUSB_OS == OPT_OS_NONE
+    // Configure Systick for each millisec
     SysTick_Config(SystemCoreClock / 1000);
-    
+#elif CFG_TUSB_OS == OPT_OS_FREERTOS
+    // Initialize System Core Clock
+    SystemCoreClockUpdate();
+#endif
+
+#if CFG_TUSB_OS == OPT_OS_NONE || CFG_TUSB_OS == OPT_OS_FREERTOS
+    // Initialize pinmuxes
+    int32_t board_init_ret = board_pins_config();
+    if(board_init_ret) {
+        __BKPT(0);
+    }
+
+    board_init_ret = board_gpios_config();
+    if(board_init_ret) {
+        __BKPT(0);
+    }
+
+    // Initialize LED
+    led_port->Initialize(BOARD_LEDRGB1_R_GPIO_PIN, NULL);
+    led_port->PowerControl(BOARD_LEDRGB1_R_GPIO_PIN, ARM_POWER_FULL);
+    led_port->SetDirection(BOARD_LEDRGB1_R_GPIO_PIN, GPIO_PIN_DIRECTION_OUTPUT);
+
+    // Initialize button
+    button_port->Initialize(BOARD_JOY_SW_CENTER_GPIO_PIN, NULL);
+    button_port->PowerControl(BOARD_JOY_SW_CENTER_GPIO_PIN, ARM_POWER_FULL);
+    button_port->SetDirection(BOARD_JOY_SW_CENTER_GPIO_PIN, GPIO_PIN_DIRECTION_INPUT);
+   
+    // Initialize serial output
     tracelib_init(NULL, NULL);
+    
 #endif
 
 #if CFG_TUSB_OS == OPT_OS_ZEPHYR
     if (device_is_ready(led.port)) {
         gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
     }
-    if (device_is_ready(button.port)) {
+    
+    if (gpio_is_ready_dt(&button)) {
         gpio_pin_configure_dt(&button, GPIO_INPUT);
-
-        // FIXME: pull-up resistor only for pin 4 on
-        // the LPGPIO port (base addr: 0x42002000,  port ID: 120)
-        if (button.pin == 4 && strcmp(button.port->name, "gpio@42002000") == 0) {
-            pinctrl_soc_pin_t pin_cfg = 0;
-            pin_cfg |= PAD_CONF_REN(1); // receiver enable
-            pin_cfg |= PAD_CONF_DSC(1); // pull-up resistor enable
-            pin_cfg |= (120) << 3;      // port ID [9:3] (120 - LPGPIO)
-            pin_cfg |= (4) << 0;        // pin number [2:0] (4 - LPGPIO pin)
-
-            pinctrl_configure_pins(&pin_cfg, 1, NULL);
-        }
     }
 #endif
 }
@@ -62,9 +83,9 @@ void board_init(void) {
  */
 void board_led_write(bool state) {
 #if CFG_TUSB_OS == OPT_OS_NONE || CFG_TUSB_OS == OPT_OS_FREERTOS
-    BOARD_LED1_Control(state ?
-        BOARD_LED_STATE_HIGH :
-        BOARD_LED_STATE_LOW);
+    led_port->SetValue(BOARD_LEDRGB1_R_GPIO_PIN, state ?
+                    GPIO_PIN_OUTPUT_STATE_HIGH :
+                    GPIO_PIN_OUTPUT_STATE_LOW);
 #endif
 #if CFG_TUSB_OS == OPT_OS_ZEPHYR
     if (device_is_ready(led.port)) {
@@ -78,16 +99,16 @@ void board_led_write(bool state) {
  */
 uint32_t board_button_read(void) {
 #if CFG_TUSB_OS == OPT_OS_NONE || CFG_TUSB_OS == OPT_OS_FREERTOS
-    BOARD_BUTTON_STATE btn_state;
-    // Get new button state (active low)
-    BOARD_BUTTON2_GetState(&btn_state);
-    return BOARD_BUTTON_STATE_LOW == btn_state;
+    uint32_t button_state;
+    button_port->GetValue(BOARD_JOY_SW_CENTER_GPIO_PIN, &button_state);
+    return GPIO_PIN_STATE_LOW == button_state;
 #endif
 #if CFG_TUSB_OS == OPT_OS_ZEPHYR
     if (!device_is_ready(button.port)) {
         return 0;
     }
-    int val = gpio_pin_get(button.port, button.pin);
+
+    int val = gpio_pin_get_dt(&button);
 
     return val == 0;    // Pin pulled low when pressed
 #endif  
