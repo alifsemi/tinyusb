@@ -1,5 +1,4 @@
 set(ALIF_CMSIS_DFP ${TOP}/hw/mcu/alif/ensemble-cmsis-dfp)
-set(ALIF_BOARDLIB ${TOP}/hw/mcu/alif/boardlib)
 set(ALIF_COMMON_APP_UTILS ${TOP}/hw/mcu/alif/common-app-utils)
 set(CMSIS_DIR ${TOP}/lib/CMSIS_6)
 
@@ -25,46 +24,72 @@ function(add_board_target BOARD_TARGET)
     return()
   endif ()
 
-  set(LD_FILE_GNU ${ALIF_CMSIS_DFP}/Device/E7/AE722F80F55D5XX/linker_script/GCC/gcc_${MCU_VARIANT}.ld)
-  message(STATUS "Setting linker file: ${LD_FILE_GNU}")
+  set(LD_SCRIPT ${ALIF_CMSIS_DFP}/Device/core/rtss_hp/linker/linker_gnu_mram.ld.src)
+  message(STATUS "Setting linker source file: ${LD_SCRIPT}")
 
   if (NOT DEFINED STARTUP_FILE_${CMAKE_C_COMPILER_ID})
-    set(STARTUP_FILE_GNU ${ALIF_CMSIS_DFP}/Device/core/${MCU_VARIANT}/source/startup_${MCU_VARIANT}.c)
+    set(STARTUP_FILE_GNU ${ALIF_CMSIS_DFP}/Device/core/common/source/startup.c)
     set(STARTUP_FILE_Clang ${STARTUP_FILE_GNU})
     message(STATUS "Setting startup file: ${STARTUP_FILE_GNU}")
   endif ()
 
   add_library(${BOARD_TARGET} STATIC
-    ${ALIF_CMSIS_DFP}/Device/common/source/system_utils.c
-    ${ALIF_CMSIS_DFP}/Device/common/source/system_M55.c
-    ${ALIF_CMSIS_DFP}/Device/common/source/clk.c
-    ${ALIF_CMSIS_DFP}/Device/common/source/mpu_M55.c
-    ${ALIF_CMSIS_DFP}/Device/common/source/tcm_partition.c
-    ${ALIF_CMSIS_DFP}/Device/common/source/tgu_M55.c
-    ${ALIF_CMSIS_DFP}/Alif_CMSIS/Source/Driver_GPIO.c
-    ${ALIF_CMSIS_DFP}/drivers/source/pinconf.c
+    ${ALIF_CMSIS_DFP}/libs/board_config/board_config.c
     ${ALIF_CMSIS_DFP}/Alif_CMSIS/Source/Driver_USART.c
     ${ALIF_CMSIS_DFP}/drivers/source/uart.c
-    ${ALIF_BOARDLIB}/devkit_e1c/board_init.c
-    ${ALIF_BOARDLIB}/devkit_gen2/board_init.c
-    ${ALIF_BOARDLIB}/appkit_gen2/board_init.c
+    ${ALIF_CMSIS_DFP}/Alif_CMSIS/Source/Driver_IO.c
+    ${ALIF_CMSIS_DFP}/drivers/source/mhu_driver.c
+    ${ALIF_CMSIS_DFP}/drivers/source/mhu_receiver.c
+    ${ALIF_CMSIS_DFP}/drivers/source/mhu_sender.c
+    ${ALIF_CMSIS_DFP}/drivers/source/pinconf.c
+    ${ALIF_CMSIS_DFP}/Device/core/common/source/cache.c
+    ${ALIF_CMSIS_DFP}/Device/core/common/source/mpu.c
+    ${ALIF_CMSIS_DFP}/Device/core/common/source/pm.c
+    ${ALIF_CMSIS_DFP}/Device/core/common/source/sau_tcm_ns_setup.c
+    ${ALIF_CMSIS_DFP}/Device/core/common/source/startup.c
+    ${ALIF_CMSIS_DFP}/Device/core/common/source/system.c
+    ${ALIF_CMSIS_DFP}/Device/core/common/source/tgu.c
+    ${ALIF_CMSIS_DFP}/Device/core/common/source/vectors.c
+    ${ALIF_CMSIS_DFP}/Device/system/source/sys_clocks.c
+    ${ALIF_CMSIS_DFP}/Device/system/source/sys_utils.c
+    ${ALIF_CMSIS_DFP}/se_services/port/clock_runtime.c
+    ${ALIF_CMSIS_DFP}/se_services/port/se_services_port.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_application.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_boot.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_clocks.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_cryptocell.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_error.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_extsys0.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_handler.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_maintenance.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_padcontrol.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_pinmux.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_power.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_system.c
+    ${ALIF_CMSIS_DFP}/se_services/source/services_host_update.c
+    ${ALIF_CMSIS_DFP}/se_services/templates/services_lib_interface.c
     ${ALIF_COMMON_APP_UTILS}/logging/uart_tracelib.c
     ${STARTUP_FILE_${CMAKE_C_COMPILER_ID}}
     )
 
   target_include_directories(${BOARD_TARGET} PUBLIC
     ${ALIF_CMSIS_DFP}/Alif_CMSIS/Include
+    ${ALIF_CMSIS_DFP}/Alif_CMSIS/Source
+    ${ALIF_CMSIS_DFP}/Device/core/rtss_hp/config
+    ${ALIF_CMSIS_DFP}/Device/core/common/include
+    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/rte
+    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/include
+    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/include/rtss_hp
+    ${ALIF_CMSIS_DFP}/Device/system/include
+    ${ALIF_CMSIS_DFP}/Boards/DevKit-e7
     ${ALIF_CMSIS_DFP}/drivers/include
-    ${ALIF_CMSIS_DFP}/Device/common/config
-    ${ALIF_CMSIS_DFP}/Device/common/include
-    ${ALIF_CMSIS_DFP}/Device/E7/AE722F80F55D5XX
-    ${ALIF_CMSIS_DFP}/Device/core/${MCU_VARIANT}
-    ${ALIF_CMSIS_DFP}/Device/core/${MCU_VARIANT}/include
-    ${ALIF_CMSIS_DFP}/Device/core/${MCU_VARIANT}/config
-    ${ALIF_CMSIS_DFP}/drivers/include
-    ${ALIF_BOARDLIB}
+    ${ALIF_CMSIS_DFP}/libs/board_config
+    ${ALIF_CMSIS_DFP}/se_services/include
+    ${ALIF_CMSIS_DFP}/se_services/port/include
+    ${ALIF_CMSIS_DFP}/se_services/templates
     ${ALIF_COMMON_APP_UTILS}/logging
     ${CMSIS_DIR}/CMSIS/Core/Include
+    ${CMSIS_DIR}/CMSIS/Driver/Include
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/boards/${BOARD}
     )
 
@@ -72,10 +97,12 @@ function(add_board_target BOARD_TARGET)
   if(MCU_VARIANT STREQUAL "M55_HP")
     target_compile_definitions(${BOARD_TARGET} PUBLIC CORE_M55_HP)
     target_compile_definitions(${BOARD_TARGET} PUBLIC M55_HP)
+    target_compile_definitions(${BOARD_TARGET} PUBLIC RTSS_HP)
     message(STATUS "Adding CORE_M55_HP to board target ${BOARD_TARGET}")
   elseif(MCU_VARIANT STREQUAL "M55_HE")
     target_compile_definitions(${BOARD_TARGET} PUBLIC CORE_M55_HE)
     target_compile_definitions(${BOARD_TARGET} PUBLIC M55_HE)
+    target_compile_definitions(${BOARD_TARGET} PUBLIC RTSS_HE)
     message(STATUS "Adding CORE_M55_HE to board target ${BOARD_TARGET}")
   endif()
 
@@ -84,8 +111,17 @@ function(add_board_target BOARD_TARGET)
   if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
     message(STATUS "Defining Linker options")
 
+    # Linker script pre-processing
+    set(LD_SCRIPT_PP "${CMAKE_CURRENT_BINARY_DIR}/linker_gnu_mram.ld")
+    add_custom_command(TARGET ${BOARD_TARGET} PRE_LINK
+       COMMAND ${CMAKE_C_COMPILER} -E -P -mcpu=cortex-m55 -mfloat-abi=hard
+                                   -I ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/config
+                                   -xc ${LD_SCRIPT} 
+                                   -o ${LD_SCRIPT_PP}
+      )
+
     target_link_options(${BOARD_TARGET} PUBLIC
-      "LINKER:--script=${LD_FILE_GNU}"
+      "LINKER:--script=${LD_SCRIPT_PP}"
       --specs=nosys.specs
       -Wl,-Map=linker.map,--cref,-print-memory-usage,--gc-sections,--no-warn-rwx-segments
       )
@@ -107,12 +143,14 @@ function(configure_freertos)
     add_compile_definitions(
       CORE_M55_HP
       M55_HP
+      RTSS_HP
       CDC_STACK_SZIE=CDC_STACK_SIZE
       ) 
   elseif(MCU_VARIANT STREQUAL "M55_HE")
     add_compile_definitions(
       CORE_M55_HE
       M55_HE
+      RTSS_HE
       CDC_STACK_SZIE=CDC_STACK_SIZE
       ) 
   endif()
@@ -128,15 +166,22 @@ function(configure_freertos)
   # without setting FREERTOS_CONFIG_FILE_DIRECTORY.
   include_directories(
     ${ALIF_CMSIS_DFP}/Alif_CMSIS/Include
+    ${ALIF_CMSIS_DFP}/Alif_CMSIS/Source
+    ${ALIF_CMSIS_DFP}/Device/core/rtss_hp/config
+    ${ALIF_CMSIS_DFP}/Device/core/common/include
+    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/rte
+    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/include
+    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/include/rtss_hp
+    ${ALIF_CMSIS_DFP}/Device/system/include
+    ${ALIF_CMSIS_DFP}/Boards/DevKit-e7
     ${ALIF_CMSIS_DFP}/drivers/include
-    ${ALIF_CMSIS_DFP}/Device/common/config
-    ${ALIF_CMSIS_DFP}/Device/common/include
-    ${ALIF_CMSIS_DFP}/Device/E7/AE722F80F55D5XX
-    ${ALIF_CMSIS_DFP}/Device/core/${MCU_VARIANT}
-    ${ALIF_CMSIS_DFP}/Device/core/${MCU_VARIANT}/include
-    ${ALIF_CMSIS_DFP}/Device/core/${MCU_VARIANT}/config
+    ${ALIF_CMSIS_DFP}/libs/board_config
+    ${ALIF_CMSIS_DFP}/se_services/include
+    ${ALIF_CMSIS_DFP}/se_services/port/include
+    ${ALIF_CMSIS_DFP}/se_services/templates    
     ${ALIF_CMSIS_DFP}/drivers/include
     ${CMSIS_DIR}/CMSIS/Core/Include
+    ${CMSIS_DIR}/CMSIS/Driver/Include
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/boards/${BOARD}
     )
 

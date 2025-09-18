@@ -1,19 +1,18 @@
 #ifndef RTE_COMPONENTS_H
 #define RTE_COMPONENTS_H
 
-#define RTE_Drivers_GPIO 1
 
 /*
  * Define the Device Header File: 
  */
-#if defined(CORE_M55_HE)
-#define CMSIS_device_header "M55_HE.h"
-#elif defined(CORE_M55_HP)
-#define CMSIS_device_header "M55_HP.h"
-#else
-#error "Unsupported core!"
-#endif
+#define CMSIS_device_header "alif.h"
 
+/* AlifSemiconductor::CMSIS Driver:USART@2.0.0 */
+#define RTE_Drivers_USART               /* Driver UART  */
+/* AlifSemiconductor::Device:SOC Peripherals:GPIO@2.0.0 */
+#define RTE_Drivers_IO              /* Driver GPIO */
+/* AlifSemiconductor::Device:SOC Peripherals:PINCONF@2.0.0 */
+#define RTE_Drivers_LL_PINCONF              /* Driver PinPAD and PinMux */
 
 
 #endif /* RTE_COMPONENTS_H */

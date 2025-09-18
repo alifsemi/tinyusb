@@ -22,8 +22,9 @@
 #else
 #include "RTE_Components.h"
 #include CMSIS_device_header
-#include "clk.h"
-#include "power.h"
+#include "sys_clocks.h"
+#include "sys_utils.h"
+#include "sys_ctrl_usb.h"
 #endif
 
 // Logging definitions
@@ -146,11 +147,11 @@ static inline void disable_usb_phy_isolation(void) {
     sys_clear_bits(VBAT_PWR_CTRL, PWR_CTRL_UPHY_ISO);
 }
 
-static inline void set_usb_phy_power_on_reset(void) {
+static inline void usb_ctrl2_phy_power_on_reset_set(void) {
     sys_set_bits(EXPMST_USB_CTRL2, USB_CTRL2_POR_RST_MASK);
 }
 
-static inline void clear_usb_phy_power_on_reset(void) {
+static inline void usb_ctrl2_phy_power_on_reset_clear(void) {
     sys_clear_bits(EXPMST_USB_CTRL2, USB_CTRL2_POR_RST_MASK);
 }
 
@@ -172,12 +173,32 @@ static inline uint32_t _dcd_local_to_global(const volatile void *local_addr) {
 
 #else
 
-static inline void set_usb_phy_power_on_reset(void) {
-    CLKCTL_PER_MST->USB_CTRL2 |= 1 << 8;
+#define CLK_ENA_CLK20M              (1U << 22)   // Enable USB and 10M_CLK
+#define VBAT_PWR_CTRL_UPHY_PWR_MASK (1U << 16)   // Mask off the power supply for USB PHY
+#define VBAT_PWR_CTRL_UPHY_ISO      (1U << 17)   // Enable isolation for USB PHY
+
+static inline void enable_cgu_clk20m(void) {
+    CGU->CLK_ENA |= CLK_ENA_CLK20M;
 }
 
-static inline void clear_usb_phy_power_on_reset(void) {
-    CLKCTL_PER_MST->USB_CTRL2 &= ~(1 << 8);
+static inline void disable_cgu_clk20m(void) {
+    CGU->CLK_ENA &= ~CLK_ENA_CLK20M;
+}
+
+static inline void enable_usb_phy_power(void) {
+    VBAT->PWR_CTRL &= ~VBAT_PWR_CTRL_UPHY_PWR_MASK;
+}
+
+static inline void disable_usb_phy_power(void) {
+    VBAT->PWR_CTRL |= VBAT_PWR_CTRL_UPHY_PWR_MASK;
+}
+
+static inline void enable_usb_phy_isolation(void) {
+    VBAT->PWR_CTRL |= VBAT_PWR_CTRL_UPHY_ISO;
+}
+
+static inline void disable_usb_phy_isolation(void) {
+    VBAT->PWR_CTRL &= ~VBAT_PWR_CTRL_UPHY_ISO;
 }
 
 static inline void _dcd_busy_wait(uint32_t usec) {
@@ -214,7 +235,7 @@ bool dcd_init(uint8_t rhport, const tusb_rhport_init_t* rh_init) {
     // Disable usb phy isolation
     disable_usb_phy_isolation();
     // Clear usb phy power-on-reset signal
-    clear_usb_phy_power_on_reset();
+    usb_ctrl2_phy_power_on_reset_clear();
 
     // NOTE: Force stop/disconnect could be used for debug purpose only
     //dcd_disconnect(rhport);
@@ -736,7 +757,7 @@ void dcd_edpt_clear_stall(uint8_t rhport, uint8_t ep_addr) {
 }
 
 void dcd_uninit(void) {
-    set_usb_phy_power_on_reset();
+    usb_ctrl2_phy_power_on_reset_set();
     enable_usb_phy_isolation(); // enable usb phy isolation
     disable_usb_phy_power(); // power down usb phy
     disable_usb_periph_clk(); // disable usb peripheral clock
