@@ -115,11 +115,11 @@ static inline uint32_t _get_transfered_bytes(uint8_t ep) {
 
 #if CFG_TUSB_OS == OPT_OS_ZEPHYR
 
-static inline void enable_usb_periph_clk(void) {
+static inline void enable_cgu_clk20m(void) {
     sys_set_bits(CGU_CLK_ENA, CLK_ENA_CLK20M);
 }
 
-static inline void disable_usb_periph_clk(void) {
+static inline void disable_cgu_clk20m(void) {
     sys_clear_bits(CGU_CLK_ENA, CLK_ENA_CLK20M);
 }
 
@@ -173,8 +173,17 @@ static inline uint32_t _dcd_local_to_global(const volatile void *local_addr) {
 
 #else
 
+#define CLK_ENA_CLK20M              (1U << 22)  // Enable USB and 10M_CLK
 #define VBAT_PWR_CTRL_UPHY_PWR_MASK (1U << 16)   // Mask off the power supply for USB PHY
 #define VBAT_PWR_CTRL_UPHY_ISO      (1U << 17)   // Enable isolation for USB PHY
+
+static inline void enable_cgu_clk20m(void) {
+    CGU->CLK_ENA |= CLK_ENA_CLK20M;
+}
+
+static inline void disable_cgu_clk20m(void) {
+    CGU->CLK_ENA &= ~CLK_ENA_CLK20M;
+}
 
 static inline void enable_usb_phy_power(void) {
     VBAT->PWR_CTRL &= ~VBAT_PWR_CTRL_UPHY_PWR_MASK;
@@ -218,7 +227,7 @@ bool dcd_init(uint8_t rhport, const tusb_rhport_init_t* rh_init) {
     (void) rh_init;
 
     // Enable 20mhz clock
-    enable_usb_periph_clk();
+    enable_cgu_clk20m();
     // Enable usb peripheral clock
     enable_usb_periph_clk();
     // Power up usb phy

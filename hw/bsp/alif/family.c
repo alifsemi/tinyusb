@@ -1,13 +1,12 @@
 #include "bsp/board_api.h"
-#include "board_config.h"
 #include <stdbool.h>
 
 #if CFG_TUSB_OS == OPT_OS_NONE || CFG_TUSB_OS == OPT_OS_FREERTOS
+#include "board_config.h"
 #include "RTE_Components.h"
 #include CMSIS_device_header
 #include "Driver_IO.h"
 #include "uart_tracelib.h"
-#include "se_services_port.h"
 
 extern ARM_DRIVER_GPIO ARM_Driver_GPIO_(BOARD_LEDRGB1_R_GPIO_PORT);
 static ARM_DRIVER_GPIO* led_port = &ARM_Driver_GPIO_(BOARD_LEDRGB1_R_GPIO_PORT);
@@ -65,6 +64,7 @@ void board_init(void) {
    
     // Initialize serial output
     tracelib_init(NULL, NULL);
+    
 #endif
 
 #if CFG_TUSB_OS == OPT_OS_ZEPHYR
@@ -76,37 +76,6 @@ void board_init(void) {
         gpio_pin_configure_dt(&button, GPIO_INPUT);
     }
 #endif
-
-    // Initialize the SE services
-    se_services_port_init();
-
-    // Enable the CLKEN_USB clock
-    uint32_t service_error_code = 0;
-    uint32_t error_code = SERVICES_clocks_enable_clock(se_services_s_handle,
-                                              CLKEN_CLK_20M, // clock_enable_t
-                                              true, // bool enable
-                                              &service_error_code);
-    if (error_code) {
-        printf("SE: USB 20MHz clock enable: %" PRId32 "\n", error_code);
-        __BKPT(0);
-    }
-
-    // Get the current run configuration from SE
-    run_profile_t runp = {0};
-    error_code = SERVICES_get_run_cfg(se_services_s_handle, &runp, &service_error_code);
-    if (error_code) {
-        printf("SE: Failed to get run cfg: %" PRId32 "\n", error_code);
-        __BKPT(0);
-    }
-    runp.phy_pwr_gating |= USB_PHY_MASK;
-    runp.memory_blocks   = SRAM0_MASK | MRAM_MASK;
-
-    // Set the current run configuration to SE
-    error_code = SERVICES_set_run_cfg(se_services_s_handle, &runp, &service_error_code);
-    if (error_code) {
-        printf("SE: Failed to set run cfg: %" PRId32 "\n", error_code);
-        __BKPT(0);
-    }
 }
 
 /**

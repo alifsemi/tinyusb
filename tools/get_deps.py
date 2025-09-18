@@ -9,7 +9,7 @@ from multiprocessing import Pool
 # path, url, commit, family (Alphabet sorted by path)
 deps_mandatory = {
     'lib/FreeRTOS-Kernel': ['https://github.com/FreeRTOS/FreeRTOS-Kernel.git',
-                            'cc0e0707c0c748713485b870bb980852b210877f',
+                            '0adc196d4bd52a2d91102b525b0aafc1e14a2386',
                             'all'],
     'lib/lwip': ['https://github.com/lwip-tcpip/lwip.git',
                  '159e31b689577dbf69cf0683bbaffbd71fa5ee10',
@@ -23,13 +23,10 @@ deps_mandatory = {
 # path, url, commit, family (Alphabet sorted by path)
 deps_optional = {
     'hw/mcu/alif/ensemble-cmsis-dfp': ['https://github.com/alifsemi/alif_ensemble-cmsis-dfp.git',
-                         '450314044646ad4b56c588b52b68eb6fe7d7caa7',
-                         'alif_e7_dk'],
-    'hw/mcu/alif/boardlib': ['https://github.com/alifsemi/alif_boardlib.git',
-                         '880e9503de907b54c8a10c838940b8bc67c9af08',
+                         'dfb7fc98b730b780bb631ff88ca843c2082661d6',
                          'alif_e7_dk'],
     'hw/mcu/alif/common-app-utils': ['https://github.com/alifsemi/alif_common-app-utils.git',
-                         '4444c94e5475b641e493fd46075908425ba52a70',
+                         '009477274b367907b97704592f9ef59e50ea9211',
                          'alif_e7_dk'],
     'hw/mcu/allwinner': ['https://github.com/hathach/allwinner_driver.git',
                          '8e5e89e8e132c0fd90e72d5422e5d3d68232b756',
