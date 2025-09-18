@@ -173,7 +173,7 @@ static inline uint32_t _dcd_local_to_global(const volatile void *local_addr) {
 
 #else
 
-#define CLK_ENA_CLK20M              (1U << 22)  // Enable USB and 10M_CLK
+#define CLK_ENA_CLK20M              (1U << 22)   // Enable USB and 10M_CLK
 #define VBAT_PWR_CTRL_UPHY_PWR_MASK (1U << 16)   // Mask off the power supply for USB PHY
 #define VBAT_PWR_CTRL_UPHY_ISO      (1U << 17)   // Enable isolation for USB PHY
 

@@ -24,8 +24,8 @@ function(add_board_target BOARD_TARGET)
     return()
   endif ()
 
-  set(LD_FILE_GNU ${ALIF_CMSIS_DFP}/Device/core/rtss_hp/linker/linker_gnu_mram.ld.src)
-  message(STATUS "Setting linker file: ${LD_FILE_GNU}")
+  set(LD_SCRIPT ${ALIF_CMSIS_DFP}/Device/core/rtss_hp/linker/linker_gnu_mram.ld.src)
+  message(STATUS "Setting linker source file: ${LD_SCRIPT}")
 
   if (NOT DEFINED STARTUP_FILE_${CMAKE_C_COMPILER_ID})
     set(STARTUP_FILE_GNU ${ALIF_CMSIS_DFP}/Device/core/common/source/startup.c)
@@ -111,8 +111,17 @@ function(add_board_target BOARD_TARGET)
   if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
     message(STATUS "Defining Linker options")
 
+    # Linker script pre-processing
+    set(LD_SCRIPT_PP "${CMAKE_CURRENT_BINARY_DIR}/linker_gnu_mram.ld")
+    add_custom_command(TARGET ${BOARD_TARGET} PRE_LINK
+       COMMAND ${CMAKE_C_COMPILER} -E -P -mcpu=cortex-m55 -mfloat-abi=hard
+                                   -I ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/config
+                                   -xc ${LD_SCRIPT} 
+                                   -o ${LD_SCRIPT_PP}
+      )
+
     target_link_options(${BOARD_TARGET} PUBLIC
-      "LINKER:--script=${LD_FILE_GNU}"
+      "LINKER:--script=${LD_SCRIPT_PP}"
       --specs=nosys.specs
       -Wl,-Map=linker.map,--cref,-print-memory-usage,--gc-sections,--no-warn-rwx-segments
       )
