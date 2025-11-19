@@ -49,6 +49,10 @@
   #include "dwc2_efm32.h"
 #elif TU_CHECK_MCU(OPT_MCU_XMC4000)
   #include "dwc2_xmc.h"
+#elif defined(TUP_USBIP_DWC2_AT32)
+  #include "dwc2_at32.h"
+#elif defined(TUP_USBIP_DWC2_NRF)
+  #include "dwc2_nrf.h"
 #else
   #error "Unsupported MCUs"
 #endif
