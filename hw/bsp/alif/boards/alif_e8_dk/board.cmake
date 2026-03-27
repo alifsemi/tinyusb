@@ -6,11 +6,9 @@ set(DSP DSP)
 set(MVE FP_FVE)
 set(BYTE_ORDER Little-endian)
 
-set(SOC_VARIANT AE722F80F55D5)
-set(BOARD_DFP_DIR DevKit-e7)
+set(SOC_VARIANT AE822FA0E5597)
+set(BOARD_DFP_DIR DevKit-e8)
 set(BOARD_ALIF_DEVKIT_VARIANT 4)
-# Note: E3 (AE302F80F55D5LE) has no native SOC directory in the DFP.
-# E3 targets use this board cmake with E7 SOC includes as a workaround.
 
 # Include qualifiers specific
 include(${CMAKE_CURRENT_LIST_DIR}/${BOARD_QUALIFIERS}/board.cmake)

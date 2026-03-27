@@ -201,6 +201,14 @@ static inline void disable_usb_phy_isolation(void) {
     VBAT->PWR_CTRL &= ~VBAT_PWR_CTRL_UPHY_ISO;
 }
 
+static inline void usb_ctrl2_phy_power_on_reset_set(void) {
+    usb_phy_por_set();
+}
+
+static inline void usb_ctrl2_phy_power_on_reset_clear(void) {
+    usb_phy_por_clear();
+}
+
 static inline void _dcd_busy_wait(uint32_t usec) {
     sys_busy_loop_us(usec);
 }

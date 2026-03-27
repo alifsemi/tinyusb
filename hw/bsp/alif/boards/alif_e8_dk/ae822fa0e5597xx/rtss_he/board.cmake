@@ -1,0 +1,1 @@
+set(MCU_VARIANT M55_HE)

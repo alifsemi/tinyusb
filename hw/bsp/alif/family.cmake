@@ -24,7 +24,14 @@ function(add_board_target BOARD_TARGET)
     return()
   endif ()
 
-  set(LD_SCRIPT ${ALIF_CMSIS_DFP}/Device/core/rtss_hp/linker/linker_gnu_mram.ld.src)
+  # Determine RTSS core directory based on MCU variant
+  if(MCU_VARIANT STREQUAL "M55_HP")
+    set(RTSS_CORE rtss_hp)
+  elseif(MCU_VARIANT STREQUAL "M55_HE")
+    set(RTSS_CORE rtss_he)
+  endif()
+
+  set(LD_SCRIPT ${ALIF_CMSIS_DFP}/Device/core/${RTSS_CORE}/linker/linker_gnu_mram.ld.src)
   message(STATUS "Setting linker source file: ${LD_SCRIPT}")
 
   if (NOT DEFINED STARTUP_FILE_${CMAKE_C_COMPILER_ID})
@@ -75,13 +82,13 @@ function(add_board_target BOARD_TARGET)
   target_include_directories(${BOARD_TARGET} PUBLIC
     ${ALIF_CMSIS_DFP}/Alif_CMSIS/Include
     ${ALIF_CMSIS_DFP}/Alif_CMSIS/Source
-    ${ALIF_CMSIS_DFP}/Device/core/rtss_hp/config
+    ${ALIF_CMSIS_DFP}/Device/core/${RTSS_CORE}/config
     ${ALIF_CMSIS_DFP}/Device/core/common/include
-    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/rte
-    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/include
-    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/include/rtss_hp
+    ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/rte
+    ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/include
+    ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/include/${RTSS_CORE}
     ${ALIF_CMSIS_DFP}/Device/system/include
-    ${ALIF_CMSIS_DFP}/Boards/DevKit-e7
+    ${ALIF_CMSIS_DFP}/Boards/${BOARD_DFP_DIR}
     ${ALIF_CMSIS_DFP}/drivers/include
     ${ALIF_CMSIS_DFP}/libs/board_config
     ${ALIF_CMSIS_DFP}/se_services/include
@@ -93,7 +100,8 @@ function(add_board_target BOARD_TARGET)
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/boards/${BOARD}
     )
 
-  # Add core definitions to board target
+  # Add SOC and core definitions to board target
+  target_compile_definitions(${BOARD_TARGET} PUBLIC ${SOC_VARIANT})
   if(MCU_VARIANT STREQUAL "M55_HP")
     target_compile_definitions(${BOARD_TARGET} PUBLIC CORE_M55_HP)
     target_compile_definitions(${BOARD_TARGET} PUBLIC M55_HP)
@@ -115,8 +123,8 @@ function(add_board_target BOARD_TARGET)
     set(LD_SCRIPT_PP "${CMAKE_CURRENT_BINARY_DIR}/linker_gnu_mram.ld")
     add_custom_command(TARGET ${BOARD_TARGET} PRE_LINK
        COMMAND ${CMAKE_C_COMPILER} -E -P -mcpu=cortex-m55 -mfloat-abi=hard
-                                   -I ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/config
-                                   -xc ${LD_SCRIPT} 
+                                   -I ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/config
+                                   -xc ${LD_SCRIPT}
                                    -o ${LD_SCRIPT_PP}
       )
 
@@ -158,28 +166,35 @@ function(configure_freertos)
   set(FREERTOS_HEAP 4 CACHE STRING "FreeRTOS heap implementation")
   set(FREERTOS_CONFIG_FILE_DIRECTORY ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/FreeRTOSConfig CACHE STRING "FreeRTOS configuration file")
 
+  # Determine RTSS core directory based on MCU variant
+  if(MCU_VARIANT STREQUAL "M55_HP")
+    set(RTSS_CORE rtss_hp)
+  elseif(MCU_VARIANT STREQUAL "M55_HE")
+    set(RTSS_CORE rtss_he)
+  endif()
+
   # WORKAROUND: Add the board folder to the include path for the entire directory.
   # The FreeRTOS kernel is built as a separate library and does not automatically
   # inherit the board's include path where RTE_Components.h is located.
   # This ensures the kernel compilation can find the required headers.
   # There is not such problem with latest FreeRTOSKernel but 10.5.1 is not working
   # without setting FREERTOS_CONFIG_FILE_DIRECTORY.
+
   include_directories(
     ${ALIF_CMSIS_DFP}/Alif_CMSIS/Include
     ${ALIF_CMSIS_DFP}/Alif_CMSIS/Source
-    ${ALIF_CMSIS_DFP}/Device/core/rtss_hp/config
+    ${ALIF_CMSIS_DFP}/Device/core/${RTSS_CORE}/config
     ${ALIF_CMSIS_DFP}/Device/core/common/include
-    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/rte
-    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/include
-    ${ALIF_CMSIS_DFP}/Device/soc/AE722F80F55D5/include/rtss_hp
+    ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/rte
+    ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/include
+    ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/include/${RTSS_CORE}
     ${ALIF_CMSIS_DFP}/Device/system/include
-    ${ALIF_CMSIS_DFP}/Boards/DevKit-e7
+    ${ALIF_CMSIS_DFP}/Boards/${BOARD_DFP_DIR}
     ${ALIF_CMSIS_DFP}/drivers/include
     ${ALIF_CMSIS_DFP}/libs/board_config
     ${ALIF_CMSIS_DFP}/se_services/include
     ${ALIF_CMSIS_DFP}/se_services/port/include
-    ${ALIF_CMSIS_DFP}/se_services/templates    
-    ${ALIF_CMSIS_DFP}/drivers/include
+    ${ALIF_CMSIS_DFP}/se_services/templates
     ${CMSIS_DIR}/CMSIS/Core/Include
     ${CMSIS_DIR}/CMSIS/Driver/Include
     ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/boards/${BOARD}
@@ -220,7 +235,7 @@ function(family_configure_example TARGET RTOS)
     BOARD_TUD_MAX_SPEED=OPT_MODE_HIGH_SPEED
     CFG_TUSB_MEM_ALIGN=TU_ATTR_ALIGNED\(32\)
     CFG_TUSB_MEM_SECTION=__attribute__\(\(section\(\"usb_dma_buf\"\)\)\)
-    BOARD_ALIF_DEVKIT_VARIANT=4
+    BOARD_ALIF_DEVKIT_VARIANT=${BOARD_ALIF_DEVKIT_VARIANT}
     UNICODE
     _UNICODE
     _DEBUG

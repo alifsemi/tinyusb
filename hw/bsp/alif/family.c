@@ -8,8 +8,16 @@
 #include "Driver_IO.h"
 #include "uart_tracelib.h"
 
-extern ARM_DRIVER_GPIO ARM_Driver_GPIO_(BOARD_LEDRGB1_R_GPIO_PORT);
-static ARM_DRIVER_GPIO* led_port = &ARM_Driver_GPIO_(BOARD_LEDRGB1_R_GPIO_PORT);
+#if BOARD_LEDRGB_COUNT > 1
+#define BOARD_LED_GPIO_PORT  BOARD_LEDRGB1_R_GPIO_PORT
+#define BOARD_LED_GPIO_PIN   BOARD_LEDRGB1_R_GPIO_PIN
+#else
+#define BOARD_LED_GPIO_PORT  BOARD_LEDRGB0_R_GPIO_PORT
+#define BOARD_LED_GPIO_PIN   BOARD_LEDRGB0_R_GPIO_PIN
+#endif
+
+extern ARM_DRIVER_GPIO ARM_Driver_GPIO_(BOARD_LED_GPIO_PORT);
+static ARM_DRIVER_GPIO* led_port = &ARM_Driver_GPIO_(BOARD_LED_GPIO_PORT);
 
 extern ARM_DRIVER_GPIO ARM_Driver_GPIO_(BOARD_JOY_SW_CENTER_GPIO_PORT);
 static ARM_DRIVER_GPIO* button_port = &ARM_Driver_GPIO_(BOARD_JOY_SW_CENTER_GPIO_PORT);
@@ -53,9 +61,9 @@ void board_init(void) {
     }
 
     // Initialize LED
-    led_port->Initialize(BOARD_LEDRGB1_R_GPIO_PIN, NULL);
-    led_port->PowerControl(BOARD_LEDRGB1_R_GPIO_PIN, ARM_POWER_FULL);
-    led_port->SetDirection(BOARD_LEDRGB1_R_GPIO_PIN, GPIO_PIN_DIRECTION_OUTPUT);
+    led_port->Initialize(BOARD_LED_GPIO_PIN, NULL);
+    led_port->PowerControl(BOARD_LED_GPIO_PIN, ARM_POWER_FULL);
+    led_port->SetDirection(BOARD_LED_GPIO_PIN, GPIO_PIN_DIRECTION_OUTPUT);
 
     // Initialize button
     button_port->Initialize(BOARD_JOY_SW_CENTER_GPIO_PIN, NULL);
@@ -83,7 +91,7 @@ void board_init(void) {
  */
 void board_led_write(bool state) {
 #if CFG_TUSB_OS == OPT_OS_NONE || CFG_TUSB_OS == OPT_OS_FREERTOS
-    led_port->SetValue(BOARD_LEDRGB1_R_GPIO_PIN, state ?
+    led_port->SetValue(BOARD_LED_GPIO_PIN, state ?
                     GPIO_PIN_OUTPUT_STATE_HIGH :
                     GPIO_PIN_OUTPUT_STATE_LOW);
 #endif
