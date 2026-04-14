@@ -1,6 +1,15 @@
-set(ALIF_CMSIS_DFP ${TOP}/hw/mcu/alif/ensemble-cmsis-dfp)
-set(ALIF_COMMON_APP_UTILS ${TOP}/hw/mcu/alif/common-app-utils)
-set(CMSIS_DIR ${TOP}/lib/CMSIS_6)
+if(NOT DEFINED ALIF_CMSIS_DFP)
+  set(ALIF_CMSIS_DFP ${TOP}/hw/mcu/alif/ensemble-cmsis-dfp)
+endif()
+message(STATUS "Using ALIF_CMSIS_DFP: ${ALIF_CMSIS_DFP}")
+if(NOT DEFINED ALIF_COMMON_APP_UTILS)
+  set(ALIF_COMMON_APP_UTILS ${TOP}/hw/mcu/alif/common-app-utils)
+endif()
+message(STATUS "Using ALIF_COMMON_APP_UTILS: ${ALIF_COMMON_APP_UTILS}")
+if(NOT DEFINED CMSIS_DIR)
+  set(CMSIS_DIR ${TOP}/lib/CMSIS_6)
+endif()
+message(STATUS "Using CMSIS_DIR: ${CMSIS_DIR}")
 
 # Include board specific
 include(${CMAKE_CURRENT_LIST_DIR}/boards/${BOARD}/board.cmake OPTIONAL RESULT_VARIABLE board_cmake_included)
@@ -84,6 +93,7 @@ function(add_board_target BOARD_TARGET)
     ${ALIF_CMSIS_DFP}/Alif_CMSIS/Source
     ${ALIF_CMSIS_DFP}/Device/core/${RTSS_CORE}/config
     ${ALIF_CMSIS_DFP}/Device/core/common/include
+    ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/config
     ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/rte
     ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/include
     ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/include/${RTSS_CORE}
@@ -185,6 +195,7 @@ function(configure_freertos)
     ${ALIF_CMSIS_DFP}/Alif_CMSIS/Source
     ${ALIF_CMSIS_DFP}/Device/core/${RTSS_CORE}/config
     ${ALIF_CMSIS_DFP}/Device/core/common/include
+    ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/config
     ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/rte
     ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/include
     ${ALIF_CMSIS_DFP}/Device/soc/${SOC_VARIANT}/include/${RTSS_CORE}
