@@ -241,12 +241,11 @@ function(family_configure_example TARGET RTOS)
 
   target_compile_definitions(${TARGET} PUBLIC
     CFG_TUSB_RHPORT0_MODE=OPT_MODE_DEVICE
-    TUP_DCD_ENDPOINT_MAX=4
+    TUP_DCD_ENDPOINT_MAX=8
     TUD_OPT_RHPORT=0
     BOARD_TUD_MAX_SPEED=OPT_MODE_HIGH_SPEED
     CFG_TUSB_MEM_ALIGN=TU_ATTR_ALIGNED\(32\)
     CFG_TUSB_MEM_SECTION=__attribute__\(\(section\(\"usb_dma_buf\"\)\)\)
-    BOARD_ALIF_DEVKIT_VARIANT=${BOARD_ALIF_DEVKIT_VARIANT}
     UNICODE
     _UNICODE
     _DEBUG
@@ -269,12 +268,17 @@ function(family_configure_example TARGET RTOS)
     )
 
   if (RTOS STREQUAL zephyr)
-    zephyr_linker_sources(SECTIONS ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/usb_buf_section.ld)
+    if (CONFIG_SOC_SERIES_E1C)
+      zephyr_linker_sources(SECTIONS ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/usb_buf_section_e1c.ld)
+    else ()
+      zephyr_linker_sources(SECTIONS ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/usb_buf_section.ld)
+    endif ()
   endif ()
 
-  family_add_tinyusb(${TARGET} OPT_MCU_NONE)
+  family_add_tinyusb(${TARGET} OPT_MCU_ALIF)
+
   target_sources(${TARGET} PRIVATE
-    ${TOP}/src/portable/alif/alif_e7_dk/dcd_ensemble.c
+    ${TOP}/src/portable/alif/ensemble/dcd_ensemble.c
     )
 
   # Workaround for Ensemble

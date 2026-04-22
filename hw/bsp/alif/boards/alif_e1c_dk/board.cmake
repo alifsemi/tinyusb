@@ -8,7 +8,6 @@ set(BYTE_ORDER Little-endian)
 
 set(SOC_VARIANT AE1C1F4051920)
 set(BOARD_DFP_DIR DevKit-e1c)
-set(BOARD_ALIF_DEVKIT_VARIANT 4)
 
 # Include qualifiers specific
 include(${CMAKE_CURRENT_LIST_DIR}/${BOARD_QUALIFIERS}/board.cmake)

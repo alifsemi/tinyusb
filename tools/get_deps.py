@@ -23,11 +23,11 @@ deps_mandatory = {
 # path, url, commit, family (Alphabet sorted by path)
 deps_optional = {
     'hw/mcu/alif/ensemble-cmsis-dfp': ['https://github.com/alifsemi/alif_ensemble-cmsis-dfp.git',
-                         'dfb7fc98b730b780bb631ff88ca843c2082661d6',
-                         'alif_e7_dk'],
+                         'b83f294445fe6496c8c5dda136085f5c12c8f8cc',
+                         'alif_e1c_dk alif_e7_dk alif_e8_appkit alif_e8_dk'],
     'hw/mcu/alif/common-app-utils': ['https://github.com/alifsemi/alif_common-app-utils.git',
                          '009477274b367907b97704592f9ef59e50ea9211',
-                         'alif_e7_dk'],
+                         'alif_e1c_dk alif_e7_dk alif_e8_appkit alif_e8_dk'],
     'hw/mcu/allwinner': ['https://github.com/hathach/allwinner_driver.git',
                          '8e5e89e8e132c0fd90e72d5422e5d3d68232b756',
                          'fc100s'],
@@ -215,7 +215,7 @@ deps_optional = {
                     'tm4c '],
     'lib/CMSIS_6': ['https://github.com/ARM-software/CMSIS_6.git',
                     'b0bbb0423b278ca632cfe1474eb227961d835fd2',
-                    'ra alif_e7_dk'],
+                    'ra alif_e1c_dk alif_e7_dk alif_e8_appkit alif_e8_dk'],
     'lib/sct_neopixel': ['https://github.com/gsteiert/sct_neopixel.git',
                          'e73e04ca63495672d955f9268e003cffe168fcd8',
                          'lpc55'],
